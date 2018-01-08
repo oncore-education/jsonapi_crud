@@ -1,0 +1,20 @@
+require 'rails_helper'
+require 'support/jsonapi_crud/config'
+
+RSpec.configure do |config|
+  config.extend JsonapiCrud::<%= @config[:classname] %>Params
+  config.include JsonapiCrud::<%= @config[:classname] %>Params
+end
+
+describe "<%= @config[:type] %>", type: :request do
+
+  describe "CRUD" do
+    let(:obj) { <%= @config[:model] %> }
+
+    it_behaves_like "crud create"
+    it_behaves_like "crud read"
+    it_behaves_like "crud update"
+    it_behaves_like "crud delete paranoid"
+  end
+
+end

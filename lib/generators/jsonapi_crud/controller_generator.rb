@@ -20,9 +20,39 @@ module JsonapiCrud
                  :params => options[:params]}
 
       template "controller.rb.erb", output
-
-      puts "Controller created at #{output}"
     end
 
+    def create_spec_params
+
+      @config = basic_config
+      @config[:base_url] = JsonapiCrud.configuration.base_url
+
+      output = File.join("spec/support/jsonapi_crud/params", "#{@config[:model]}_params.rb")
+
+      template "model_params.rb.erb", output
+    end
+
+    def create_request_spec
+      @config = basic_config
+
+      output = File.join("spec/requests", "#{@config[:type]}_requests_spec.rb")
+
+      template "request_spec.rb.erb", output
+    end
+
+    private
+
+    def basic_config
+      type = controller_class_name.downcase
+      model = type.singularize
+      classname = model.classify
+
+      config = {}
+      config[:type] = type
+      config[:model] = model
+      config[:classname] = classname
+
+      config
+    end
   end
 end

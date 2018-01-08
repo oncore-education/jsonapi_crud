@@ -1,4 +1,5 @@
 require 'active_support/concern'
+require 'util/errors'
 require 'helpers/params_helper'
 require 'helpers/errors_helper'
 
@@ -33,7 +34,6 @@ module JsonapiCrud
     end
 
     def set_current_obj
-      Rails.logger.info "set_current_obj"
       source = request.method == "DELETE" ? model.with_deleted : model
       if params.has_key? model_id
         @current_obj = source.find params[model_id]
@@ -64,16 +64,16 @@ module JsonapiCrud
     def index
       if params.has_key?(model_ids)
         objs = model.where(id: params[model_ids])
-        @response_obj = ResponseObject.new(obj: objs)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: objs)
       else
-        @response_obj = ResponseObject.new(obj: model.all)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: model.all)
       end
 
       render_response
     end
 
     def show
-      @response_obj = ResponseObject.new(obj: @current_obj, include: p_include) #, meta: "roles"
+      @response_obj = ::JsonapiCrud::ResponseObject.new(obj: @current_obj, include: p_include) #, meta: "roles"
       render_response
     end
 
@@ -87,7 +87,7 @@ module JsonapiCrud
 
     def _create(obj, &on_success)
       if obj.save
-        @response_obj = ResponseObject.new(obj: obj, status: :created)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :created)
         on_success.call if on_success.present?
         render_response
       else
@@ -105,7 +105,7 @@ module JsonapiCrud
     def _update(obj, update_params = valid_params, &on_success)
       obj.update_timestamps(nil, p_attributes[:updated_at]) if p_attributes.present?
       if obj.update(update_params)
-        @response_obj = ResponseObject.new(:obj => obj)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(:obj => obj)
         on_success.call if on_success.present?
         render_response
       else
@@ -127,7 +127,7 @@ module JsonapiCrud
 
     def soft_destroy(obj, &on_success)
       if obj.deleted? || obj.destroy
-        @response_obj = ResponseObject.new(obj: obj, status: :ok)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :ok)
         on_success.call if on_success.present?
         render_response
       else
@@ -137,7 +137,7 @@ module JsonapiCrud
 
     def hard_destroy(obj, &on_success)
       if obj.really_destroy!
-        @response_obj = ResponseObject.new(obj: nil, status: :no_content)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: nil, status: :no_content)
         on_success.call if on_success.present?
         render_response
       else
@@ -153,7 +153,7 @@ module JsonapiCrud
 
     def _restore(obj, &on_success)
       if obj.restore
-        @response_obj = ResponseObject.new(obj: obj, status: :ok)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :ok)
         on_success.call if on_success.present?
         render_response
       else
@@ -163,7 +163,7 @@ module JsonapiCrud
 
     def compile_errors(obj)
       obj.errors.each do |attribute, error|
-        Errors.add( Error.invalid_attribute(attribute, error) )
+        ::JsonapiCrud::Errors.add( Error.invalid_attribute(attribute, error) )
       end
       render_errors
     end

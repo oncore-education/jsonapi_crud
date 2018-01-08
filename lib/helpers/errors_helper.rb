@@ -19,7 +19,7 @@ module JsonapiCrud
   module ErrorsHelper
     def render_errors
       if Errors.has_errors?
-        render :json => Errors.output, status: ::OCE::Errors.status
+        render :json => Errors.output, status: Errors.status
       end
     end
 

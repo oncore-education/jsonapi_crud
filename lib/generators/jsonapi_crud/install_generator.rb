@@ -1,3 +1,5 @@
+require 'colorize'
+
 module JsonapiCrud
   #module Generators
   class InstallGenerator < Rails::Generators::Base
@@ -6,8 +8,18 @@ module JsonapiCrud
 
     def copy_initializer
       template "jsonapi_crud_initializer.rb", "config/initializers/jsonapi_crud.rb"
+    end
 
-      puts "All your json crud are belong to us"
+    def copy_rspec
+      output = "spec/support"
+      source_content = File.expand_path("../../templates/support/jsonapi_crud", __FILE__)
+      FileUtils.cp_r source_content, output
+
+      Dir["#{source_content}/**/*.rb"].each do |f|
+        #puts f
+        dest = f.split("support/jsonapi_crud")[1]
+        puts "#{"     create".yellow} #{output}#{dest}"
+      end
     end
   end
   #end

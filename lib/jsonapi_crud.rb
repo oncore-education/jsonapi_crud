@@ -1,5 +1,6 @@
 require 'jsonapi_crud/version'
 require 'mixins/actions'
+require 'util/errors'
 require 'models/error'
 require 'models/response_object'
 
@@ -22,12 +23,14 @@ module JsonapiCrud
   class Configuration
     attr_accessor :controller_output,
                   :controller_modules,
-                  :base_class
+                  :base_class,
+                  :base_url
 
     def initialize
       @controller_output = Rails.root + "/app/controllers"
       @controller_modules = []
       @base_class = "ApplicationRecord"
+      @base_url = ""
     end
   end
 end
