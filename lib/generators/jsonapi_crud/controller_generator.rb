@@ -37,7 +37,13 @@ module JsonapiCrud
 
       output = File.join("spec/requests", "#{@config[:type]}_requests_spec.rb")
 
-      template "request_spec.rb.erb", output
+      template_override = Rails.root.join("spec/support/jsonapi_crud/requests_spec_template.rb.erb")
+      if File.exist?(template_override)
+        template File.expand_path("#{template_override}", __FILE__), output
+      else
+        template "request_spec.rb.erb", output
+      end
+
     end
 
     private
