@@ -17,8 +17,16 @@ module JsonapiCrud
       before_action :set_current_obj, :only => [*REQUIRE_CURRENT_OBJ]
     end
 
+    def dynamic_model?
+      false
+    end
+
     def model_class
-      controller_name.classify
+      type = controller_name
+      if dynamic_model?
+        type = p_data[:type].singularize if p_data[:type].present?
+      end
+      type.jsonapi_underscore.classify
     end
 
     def model
@@ -33,8 +41,12 @@ module JsonapiCrud
       model_id + "s"
     end
 
+    def is_paranoid
+      model.new.attributes.keys.include? "deleted_at"
+    end
+
     def set_current_obj
-      source = request.method == "DELETE" ? model.with_deleted : model
+      source = request.method == "DELETE" && is_paranoid ? model.with_deleted : model
       if params.has_key? model_id
         @current_obj = source.find params[model_id]
       else
@@ -114,7 +126,7 @@ module JsonapiCrud
     end
 
     def destroy
-      if p_meta.present? && p_meta.has_key?(:hard_delete) && p_meta[:hard_delete].to_bool
+      if !is_paranoid || (p_meta.present? && p_meta.has_key?(:hard_delete) && p_meta[:hard_delete].to_bool)
         hard_destroy(@current_obj) do
           hard_destroy_success
         end
@@ -136,7 +148,8 @@ module JsonapiCrud
     end
 
     def hard_destroy(obj, &on_success)
-      if obj.really_destroy!
+      destroy_method = is_paranoid ? "really_destroy!" : "destroy"
+      if obj.send(destroy_method)#.really_destroy!
         @response_obj = ::JsonapiCrud::ResponseObject.new(obj: nil, status: :no_content)
         on_success.call if on_success.present?
         render_response
