@@ -29,7 +29,7 @@ module JsonapiCrud
     def initialize
       @controller_output = Rails.root + "/app/controllers"
       @controller_modules = []
-      @base_class = "ApplicationRecord"
+      @base_class = "ApplicationController"
       @base_url = ""
     end
   end
