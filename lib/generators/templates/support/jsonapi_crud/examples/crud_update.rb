@@ -1,21 +1,22 @@
-RSpec.shared_examples 'crud update' do
+RSpec.shared_examples 'crud update' do |data_source|
+  unprocessable_parms ||= []
   describe "#PATCH" do
-    it_behaves_like "record not found", :patch, { }
+    it_behaves_like "record not found", data_source, :patch
 
-    describe "will update a #{model}" do
+    describe "will update a model" do
       before do
-        make_req(api_user, base_url(obj.id), :patch, update_params)
+        make_req(api_user, data_source.base_url(obj.id), :patch, data_source.update_params)
       end
 
       it "has a valid response" do
         has_http_status(:ok)
-        verify_response_body(expected_update_attributes)
+        verify_response_body(data_source.expected_update_attributes)
       end
     end
 
     describe "will show an error if parameters are missing" do
       before do
-        make_req(api_user, base_url(obj.id), :patch, { })
+        make_req(api_user, data_source.base_url(obj.id), :patch, data_source.default_params)
       end
 
       it "responds with bad request" do
@@ -23,11 +24,10 @@ RSpec.shared_examples 'crud update' do
       end
     end
 
-    unprocessable_parms.each do |p|
+    data_source.unprocessable_parms.each do |p|
       describe "will not update with invalid attributes" do
-
         before do
-          make_req(api_user, base_url(obj.id), :patch, p )
+          make_req(api_user, data_source.base_url(obj.id), :patch, p)
         end
 
         it "responds with unprocessable entity" do
@@ -35,5 +35,6 @@ RSpec.shared_examples 'crud update' do
         end
       end
     end
+
   end
 end

@@ -49,34 +49,47 @@ module JsonapiCrud
         key = p[:key]
         value = json_obj[key]
         filter = p[:filter]
+        filter = "json_data(value)['id']" if filter.nil? && p[:json_obj] == "json_relationships"
         if filter.present?
-          a = filter.split(".")
-          a.each do |k|
-            value = value[ parse_key(k)]
-          end
+          # a = filter.split(".")
+          # a.each do |k|
+          #   value = value[ parse_key(k)]
+          # end
+          value = eval(filter)
         end
-        expected_value = p[:value]
+        expected_value = parse_expected_value(p)
+        expected_value
         if p[:type_check].nil?
-          expect( value ).to eq( parse_expected_value(expected_value) )
+          expect( value ).to eq( expected_value )
         elsif p[:type_check] == "not nil"
           expect( value ).to_not be_nil
+        elsif p[:type_check] == "nil"
+          expect( value ).to be_nil
         end
       end
     end
 
-    def parse_expected_value(expected_value)
-      if expected_value.start_with? "###."
-        a = expected_value.split(".")
-        obj = a[1]
-        method = a[2]
-        value = send(obj)[method]
-        if a[3].present?
-          value = value.send(a[3])
-        end
-        return value
-      end
+    def parse_expected_value(p)
+      value = p[:value]
+      return eval(value) if p[:eval]
 
-      expected_value
+      value
+
+      # if expected_value.to_s.start_with? ""
+      #   return eval(expected_value)
+      #
+      #   a = expected_value.split(".")
+      #   obj = a[1]
+      #   method = a[2]
+      #   value = send(obj)[method]
+      #   if a[3].present?
+      #     value = value.send(a[3])
+      #   end
+      #   return value
+      #
+      # end
+      #
+      # expected_value
     end
   end
 end

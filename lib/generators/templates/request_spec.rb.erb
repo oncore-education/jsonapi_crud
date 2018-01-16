@@ -1,20 +1,17 @@
 require 'rails_helper'
 require 'support/jsonapi_crud/config'
+require 'support/data_source/<%= @config[:model] %>'
+Dir[Rails.root.join("spec/support/shared/**/*.rb")].each {|f| require f}
 
-RSpec.configure do |config|
-  config.extend JsonapiCrud::<%= @config[:classname] %>Params
-  config.include JsonapiCrud::<%= @config[:classname] %>Params
-end
 
 describe "<%= @config[:type] %>", type: :request do
+  data_source = JsonapiCrud::<%= @config[:classname] %>DataSource.new
 
   describe "CRUD" do
-    let(:obj) { <%= @config[:model] %> }
-
-    it_behaves_like "crud create"
-    it_behaves_like "crud read"
-    it_behaves_like "crud update"
-    it_behaves_like "crud delete paranoid"
+    it_behaves_like "crud create", data_source
+    it_behaves_like "crud read", data_source
+    it_behaves_like "crud update", data_source
+    it_behaves_like "crud delete paranoid", data_source
   end
 
 end
