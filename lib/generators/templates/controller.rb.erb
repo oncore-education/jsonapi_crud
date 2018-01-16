@@ -6,11 +6,13 @@
 
   <%= "#{' ' * indent}" %>include JsonapiCrud::Actions
 
-  <%= "#{' ' * indent}" %>private
+<%
+  #<%= "#{' ' * indent}" ##>private
 
-  <%= "#{' ' * indent}" %># def valid_params
-    <%= "#{' ' * indent}" %># p_attributes.permit(:params, :to, :allow)
-  <%= "#{' ' * indent}" %># end
+  #<%= "#{' ' * indent}" ##>def valid_params
+  #  <%= "#{' ' * indent}" ##>p_attributes.permit( <%= @config[:params].join(", ") ##> )
+  #<%= "#{' ' * indent}" ##>end
+%>
 
 <%= "#{' ' * indent}" %>end
 
@@ -18,5 +20,5 @@
 <% end %>
 
 <%
-# <%= @config[:params].join(", ")
+#
 %>
