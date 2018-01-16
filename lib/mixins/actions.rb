@@ -24,7 +24,11 @@ module JsonapiCrud
     def model_class
       type = controller_name
       if dynamic_model?
-        type = p_data[:type].singularize if p_data[:type].present?
+        if params[:data].present? && p_data[:type].present?
+          type = p_data[:type].singularize
+        elsif params[:type].present?
+          type = params[:type]
+        end
       end
       type.jsonapi_underscore.classify
     end
@@ -41,12 +45,12 @@ module JsonapiCrud
       model_id + "s"
     end
 
-    def is_paranoid
+    def paranoid?
       model.new.attributes.keys.include? "deleted_at"
     end
 
     def set_current_obj
-      source = request.method == "DELETE" && is_paranoid ? model.with_deleted : model
+      source = request.method == "DELETE" && paranoid? ? model.with_deleted : model
       if params.has_key? model_id
         @current_obj = source.find params[model_id]
       else
@@ -61,6 +65,7 @@ module JsonapiCrud
 
       p_relationships.each do |key, relationship|
         attribute = key.jsonapi_underscore
+        next unless can_relate?(attribute)
         data = p_data(relationship)
         if data.kind_of?(Array)
           ids = data.map { |item| item[:id] }
@@ -108,7 +113,7 @@ module JsonapiCrud
     end
 
     def update
-      build_relationships
+      build_relationships if can_update_relationships?
       _update(@current_obj) do
         update_success
       end
@@ -126,7 +131,7 @@ module JsonapiCrud
     end
 
     def destroy
-      if !is_paranoid || (p_meta.present? && p_meta.has_key?(:hard_delete) && p_meta[:hard_delete].to_bool)
+      if !paranoid? || (p_meta.present? && p_meta.has_key?(:hard_delete) && p_meta[:hard_delete].to_bool)
         hard_destroy(@current_obj) do
           hard_destroy_success
         end
@@ -148,8 +153,8 @@ module JsonapiCrud
     end
 
     def hard_destroy(obj, &on_success)
-      destroy_method = is_paranoid ? "really_destroy!" : "destroy"
-      if obj.send(destroy_method)#.really_destroy!
+      destroy_method = paranoid? ? "really_destroy!" : "destroy"
+      if obj.send(destroy_method)
         @response_obj = ::JsonapiCrud::ResponseObject.new(obj: nil, status: :no_content)
         on_success.call if on_success.present?
         render_response
@@ -203,6 +208,24 @@ module JsonapiCrud
     end
 
     def valid_params
+      p_attributes.permit(*model.valid_attributes)
+    end
+
+    def valid_relationships
+      model.serialized_relationships
+    end
+
+    def can_update_relationships?
+      false
+    end
+
+    def can_relate?(key)
+      return false if params[:action] == "update" && !can_update_relationships?
+      a = valid_relationships || []
+      if a.is_a?(Hash)
+        a = a[params[:action].to_sym] || []
+      end
+      a.include?(key.to_sym)
     end
 
   end
