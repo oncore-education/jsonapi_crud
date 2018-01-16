@@ -22,14 +22,14 @@ module JsonapiCrud
       template "controller.rb.erb", output
     end
 
-    def create_spec_params
+    def create_data_source
 
       @config = basic_config
       @config[:base_url] = JsonapiCrud.configuration.base_url
 
-      output = File.join("spec/support/jsonapi_crud/params", "#{@config[:model]}_params.rb")
+      output = File.join("spec/support/data_source/", "#{@config[:model]}.rb")
 
-      template "model_params.rb.erb", output
+      template "model_data_source.rb.erb", output
     end
 
     def create_request_spec
@@ -37,7 +37,7 @@ module JsonapiCrud
 
       output = File.join("spec/requests", "#{@config[:type]}_requests_spec.rb")
 
-      template_override = Rails.root.join("spec/support/jsonapi_crud/requests_spec_template.rb.erb")
+      template_override = Rails.root.join("spec/support/jsonapi_crud/templates/request_spec.rb.erb")
       if File.exist?(template_override)
         template File.expand_path("#{template_override}", __FILE__), output
       else

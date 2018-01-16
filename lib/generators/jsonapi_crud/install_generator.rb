@@ -16,7 +16,6 @@ module JsonapiCrud
       FileUtils.cp_r source_content, output
 
       Dir["#{source_content}/**/*.rb"].each do |f|
-        #puts f
         dest = f.split("support/jsonapi_crud")[1]
         puts "#{"     create".yellow} #{output}#{dest}"
       end
