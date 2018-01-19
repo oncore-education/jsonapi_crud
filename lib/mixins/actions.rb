@@ -2,6 +2,7 @@ require 'active_support/concern'
 require 'util/errors'
 require 'helpers/params_helper'
 require 'helpers/errors_helper'
+require 'helpers/validations_helper'
 
 module JsonapiCrud
   module Actions extend ActiveSupport::Concern
@@ -10,7 +11,9 @@ module JsonapiCrud
     include JsonapiCrud::ErrorsHelper
 
     attr_reader :response_obj,
-                :current_obj
+                :current_obj,
+                :include
+
 
     REQUIRE_CURRENT_OBJ = [:show, :update, :destroy, :restore]
     included do
@@ -19,6 +22,10 @@ module JsonapiCrud
 
     def dynamic_model?
       false
+    end
+
+    def include
+      @include ||= []
     end
 
     def model_class
@@ -60,21 +67,45 @@ module JsonapiCrud
       render_error Error.not_found({:id => params[:id]} )
     end
 
-    def build_relationships
-      return if p_relationships.nil?
+    def create_related_models(key, related_model, ids)
+      records = []
+      ids.each do |id|
+        included = p_included(key.pluralize, id)
+        if included.present? && included.count == 1
+          obj = related_model.new(included.first[:attributes].permit(*related_model.valid_attributes))
+          build_relationships(obj, included.first[:relationships])
+          if obj.save
+            self.include << key.jsonapi_underscore
+            records << obj
+          else
+            # obj.errors.each do |attribute, error|
+            #   Rails.logger.info " -- #{attribute} #{error}"
+            # end
+          end
+        end
+      end
+      records
+    end
 
-      p_relationships.each do |key, relationship|
+    def build_relationships(obj, relationships)
+      return if relationships.nil?
+      relationships.each do |key, relationship|
         attribute = key.jsonapi_underscore
-        next unless can_relate?(attribute)
+        related_model = attribute.classify.constantize
+        next unless obj.can_relate?(attribute)
         data = p_data(relationship)
         if data.kind_of?(Array)
           ids = data.map { |item| item[:id] }
-          value = attribute.classify.constantize.where(id: [ids])
+          records = related_model.where(id: [ids])
+          value = records + create_related_models(key, related_model, ids - records.map{|r| r.id})
         else
           id = data[:id]
-          value = attribute.classify.constantize.find_by(id: id)
+          value = related_model.find_by(id: id)
+          if value.nil?
+            value = create_related_models(key, related_model, [id]).first
+          end
         end
-        @current_obj.send("#{attribute}=", value) unless value.nil?
+        obj.send("#{attribute}=", value) unless value.nil?
       end
     end
 
@@ -96,7 +127,7 @@ module JsonapiCrud
 
     def create
       @current_obj = model.new(valid_params)
-      build_relationships
+      build_relationships(@current_obj, p_relationships)
       _create(@current_obj) do
         create_success
       end
@@ -104,7 +135,8 @@ module JsonapiCrud
 
     def _create(obj, &on_success)
       if obj.save
-        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :created)
+        Rails.logger.info "include: #{@include} #{self.include}"
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :created, include: @include) #
         on_success.call if on_success.present?
         render_response
       else
@@ -113,7 +145,7 @@ module JsonapiCrud
     end
 
     def update
-      build_relationships if can_update_relationships?
+      build_relationships(@current_obj, p_relationships) if can_update_relationships?
       _update(@current_obj) do
         update_success
       end
@@ -187,10 +219,15 @@ module JsonapiCrud
     end
 
     def render_response
+      before_render
+      Rails.logger.info "@response_obj.options: #{@response_obj.options}"
       render :json => @response_obj.obj, **@response_obj.options
     end
 
     #abstract
+
+    def before_render
+    end
 
     def create_success
     end
@@ -211,22 +248,19 @@ module JsonapiCrud
       p_attributes.permit(*model.valid_attributes)
     end
 
-    def valid_relationships
-      model.serialized_relationships
-    end
+    # def valid_relationships
+    #   model.serialized_relationships
+    # end
 
-    def can_update_relationships?
-      false
-    end
-
-    def can_relate?(key)
-      return false if params[:action] == "update" && !can_update_relationships?
-      a = valid_relationships || []
-      if a.is_a?(Hash)
-        a = a[params[:action].to_sym] || []
-      end
-      a.include?(key.to_sym)
-    end
+    # def can_relate?(obj, key)
+    #   type ||= model
+    #   return false if params[:action] == "update" && !can_update_relationships?
+    #   a = type.serialized_relationships #valid_relationships || []
+    #   if a.is_a?(Hash)
+    #     a = a[params[:action].to_sym] || []
+    #   end
+    #   a.include?(key.to_sym)
+    # end
 
   end
 end
