@@ -4,24 +4,27 @@ module JsonapiCrud
   class <%= @config[:classname] %>DataSource < SharedDataSource
 
     def model_type
-      "<%= @config[:model] %>"
+      "<%= @config[:classname].underscore.gsub("_","-") %>"
     end
 
     # CREATE
     def create_params
-      #
       formatted_params( :attributes => { } )
 
     end
 
     def expected_create_attributes
-      # [{:json_obj => JsonResponse::ATTRIBUTES, :key => "KEY TO CHECK", :value => "EXPECTED_VALUE"}]
+      # [{:json_obj => JsonResponse::ATTRIBUTES, :key => "KEY_TO_CHECK", :value => "EXPECTED_VALUE"}]
       []
+    end
+
+    def invalid_params
+      formatted_params( :attributes => { } )
     end
 
     # SHOW
     def expected_show_attributes
-      # [{:json_obj => JsonResponse::ATTRIBUTES, :key => "KEY TO CHECK", :value => "EXPECTED_VALUE"}]
+      # [{:json_obj => JsonResponse::ATTRIBUTES, :key => "KEY_TO_CHECK", :value => "EXPECTED_VALUE"}]
       []
     end
 
@@ -32,21 +35,9 @@ module JsonapiCrud
     end
 
     def expected_update_attributes
-      # [{:json_obj => JsonResponse::ATTRIBUTES, :key => "KEY TO CHECK", :value => "EXPECTED_VALUE"}]
+      # [{:json_obj => JsonResponse::ATTRIBUTES, :key => "KEY_TO_CHECK", :value => "EXPECTED_VALUE"}]
       []
     end
-
-    # INVALID
-
-    def invalid_params
-      formatted_params( :attributes => { } )
-    end
-
-    def unprocessable_parms(id = nil)
-      # [formatted_params( :id => id, :attributes => { } )]
-      []
-    end
-
 
   end
 end
