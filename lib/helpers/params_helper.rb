@@ -17,6 +17,14 @@ module JsonapiCrud
       p_data[p_relationships[r]]
     end
 
+    def p_included(type, id = nil)
+      return params[:included]
+                 .select{ |item|
+                   item[:type] == type && (id.present? && item[:id] == id )
+                 } if params[:included].present?
+      []
+    end
+
     def p_meta(source = nil)
       p_data(source)[:meta]
       #params[:meta]
