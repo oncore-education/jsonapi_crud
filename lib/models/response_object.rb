@@ -17,7 +17,7 @@ module JsonapiCrud
       opts[:status] = status
       opts[:meta] = meta if meta.present?
       opts[:include] = include if include.present?
-
+      opts[:included] = include if include.present?
       opts
     end
   end
