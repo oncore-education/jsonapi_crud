@@ -32,5 +32,9 @@ module JsonapiCrud
       end
     end
 
+    def serialized_relationships
+      self.class.name.constantize.serialized_relationships
+    end
+
   end
 end
