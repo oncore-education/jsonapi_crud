@@ -49,9 +49,9 @@ module JsonapiCrud
     private
 
     def basic_config
-      type = controller_class_name.downcase
+      type = controller_class_name.underscore.downcase
       model = type.singularize
-      classname = model.classify
+      classname = controller_class_name.singularize
 
       config = {}
       config[:type] = type
