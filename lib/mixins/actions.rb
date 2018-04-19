@@ -91,15 +91,21 @@ module JsonapiCrud
       return if relationships.nil?
       relationships.each do |key, relationship|
         attribute = key.jsonapi_underscore
-        related_model = attribute.classify.constantize
         next unless obj.can_relate?(attribute)
+        related_attribute = attribute
         data = p_data(relationship)
+        if data[:type].present? && relationship.present?
+          related_attribute = data[:type].singularize
+        end
+        related_model = related_attribute.classify.constantize
+
         if data.kind_of?(Array)
           ids = data.map { |item| item[:id] }
           records = related_model.where(id: [ids])
           value = records + create_related_models(key, related_model, ids - records.map{|r| r.id})
         else
           id = data[:id]
+
           value = related_model.find_by(id: id)
           if value.nil?
             value = create_related_models(key, related_model, [id]).first
@@ -145,7 +151,7 @@ module JsonapiCrud
     end
 
     def update
-      build_relationships(@current_obj, p_relationships) if can_update_relationships?
+      build_relationships(@current_obj, p_relationships)
       _update(@current_obj) do
         update_success
       end
