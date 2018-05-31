@@ -118,9 +118,9 @@ module JsonapiCrud
     def index
       if params.has_key?(model_ids)
         objs = model.where(id: params[model_ids])
-        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: objs)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: objs, include: p_include)
       else
-        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: model.all)
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: model.all, include: p_include)
       end
 
       render_response
@@ -226,7 +226,7 @@ module JsonapiCrud
 
     def render_response
       before_render
-      Rails.logger.info "@response_obj.options: #{@response_obj.options}"
+      # Rails.logger.info "@response_obj.options: #{@response_obj.options}"
       render :json => @response_obj.obj, **@response_obj.options
     end
 
