@@ -2,11 +2,12 @@ module JsonapiCrud
   module ActiveRecordHelper
 
     def editable_relationships
-      self.serialized_relationships.select{ |name| name.to_s.pluralize == name.to_s }
+      # self.serialized_relationships.select{ |name| name.to_s.pluralize == name.to_s }
+      self.serialized_relationships.map{ |name| name.to_s }
     end
 
     def can_update_relationship?(key)
-      self.send(key).nil? || editable_relationships.include?(key.to_sym)
+      self.send(key).nil? || editable_relationships.include?(key) # .to_sym
     end
 
     def valid_relationships
