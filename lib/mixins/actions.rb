@@ -94,10 +94,15 @@ module JsonapiCrud
         next unless obj.can_relate?(attribute)
         related_attribute = attribute
         data = p_data(relationship)
-        if data[:type].present? && relationship.present?
-          related_attribute = data[:type].singularize
+
+        begin
+          if data[:type].present? && relationship.present?
+            related_attribute = data[:type].singularize
+          end
+          related_model = related_attribute.classify.constantize
+        rescue => ex
+          next
         end
-        related_model = related_attribute.classify.constantize
 
         if data.kind_of?(Array)
           ids = data.map { |item| item[:id] }
