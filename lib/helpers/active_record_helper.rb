@@ -10,10 +10,6 @@ module JsonapiCrud
       self.send(key).nil? || editable_relationships.include?(key) # .to_sym
     end
 
-    def valid_relationships
-      self.serialized_relationships
-    end
-
     def can_relate?(key)
       return false unless can_update_relationship?(key)
       self.serialized_relationships.include? key.to_sym

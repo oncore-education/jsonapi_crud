@@ -27,7 +27,8 @@ module JsonapiCrud
         end
 
         def serialized_relationships
-          self.serializer.associations.map{ |assoc| assoc.name }
+          # self.serializer.associations.map{ |assoc| assoc.name }
+          self.serializer.class._reflections.map { |key, reflection| key }
         end
       end
     end
