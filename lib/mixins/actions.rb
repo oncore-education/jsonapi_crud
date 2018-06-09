@@ -174,7 +174,7 @@ module JsonapiCrud
     end
 
     def destroy
-      if !paranoid? || (p_meta.present? && p_meta.has_key?(:hard_delete) && p_meta[:hard_delete].to_bool)
+      if !paranoid? || (params[:hard_delete].present? && params[:hard_delete].to_bool)
         hard_destroy(@current_obj) do
           hard_destroy_success
         end
