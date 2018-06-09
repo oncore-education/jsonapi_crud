@@ -35,8 +35,11 @@ module JsonapiCrud
           type = p_data[:type].singularize
         elsif params[:type].present?
           type = params[:type]
+        else
+          type = request.fullpath.split("/")[2]
         end
       end
+      puts type
       type.jsonapi_underscore.classify
     end
 
