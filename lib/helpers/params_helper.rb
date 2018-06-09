@@ -1,8 +1,8 @@
 module JsonapiCrud
   module ParamsHelper
     def p_data(source = nil)
-      return { } if request.method == 'DELETE'
       source ||= params
+      return source[:data] if request.method == 'DELETE'
       source.require(:data)
     end
 
