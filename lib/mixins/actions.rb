@@ -39,7 +39,7 @@ module JsonapiCrud
           type = request.fullpath.split("/")[2]
         end
       end
-      puts type
+      #  puts type
       type.jsonapi_underscore.classify
     end
 
