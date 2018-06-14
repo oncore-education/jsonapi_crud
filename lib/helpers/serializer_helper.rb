@@ -30,12 +30,21 @@ module JsonapiCrud
           # self.serializer.associations.map{ |assoc| assoc.name }
           self.serializer.class._reflections.map { |key, reflection| key }
         end
+
+        def relationship_reflection(name)
+          # self.serializer.associations.map{ |assoc| assoc.name }
+          self.serializer.class._reflections[name.to_sym]  #.select { |key| key == name }.first
+        end
       end
     end
 
     def serialized_relationships
       self.class.name.constantize.serialized_relationships
     end
+    def relationship_reflection(name)
+      self.class.name.constantize.relationship_reflection(name)
+    end
+
 
   end
 end
