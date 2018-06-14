@@ -149,7 +149,7 @@ module JsonapiCrud
 
     def _create(obj, &on_success)
       if obj.save
-        Rails.logger.info "include: #{@include} #{self.include}"
+        # Rails.logger.info "include: #{@include} #{self.include}"
         @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :created, include: @include) #
         on_success.call if on_success.present?
         render_response
@@ -229,12 +229,14 @@ module JsonapiCrud
       obj.errors.each do |attribute, error|
         ::JsonapiCrud::Errors.add( Error.invalid_attribute(attribute, error) )
       end
+      # puts Errors.output if Rails.env.test?
       render_errors
     end
 
     def render_response
       before_render
       # Rails.logger.info "@response_obj.options: #{@response_obj.options}"
+      # puts @response_obj.obj.as_json if Rails.env.test?
       render :json => @response_obj.obj, **@response_obj.options
     end
 
