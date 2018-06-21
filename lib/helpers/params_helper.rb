@@ -31,6 +31,10 @@ module JsonapiCrud
       #params[:meta]
     end
 
+    def p_resource_meta
+      params[:_meta]
+    end
+
     def p_include
       params[:include]
     end

@@ -48,7 +48,7 @@ module JsonapiCrud
     end
 
     def model_id
-      model_class.downcase + "_id"
+      model_class.underscore.downcase + "_id"
     end
 
     def model_ids
@@ -77,14 +77,15 @@ module JsonapiCrud
         if included.present? && included.count == 1
           obj = related_model.new(included.first[:attributes].permit(*related_model.valid_attributes))
           build_relationships(obj, included.first[:relationships])
-          if obj.save
-            self.include << key.jsonapi_underscore
-            records << obj
-          else
-            # obj.errors.each do |attribute, error|
-            #   Rails.logger.info " -- #{attribute} #{error}"
-            # end
-          end
+          # if obj.save
+          #   self.include << key.jsonapi_underscore
+          #   records << obj
+          # else
+          #   obj.errors.each do |attribute, error|
+          #     Rails.logger.info " -- #{attribute} #{error}"
+          #   end
+          # end
+          records << obj
         end
       end
       records
@@ -97,40 +98,67 @@ module JsonapiCrud
         next unless obj.can_relate?(attribute)
         related_attribute = attribute
         data = p_data(relationship)
-
         begin
-          if data[:type].present? && relationship.present?
-            related_attribute = data[:type].singularize
+          data_source =  data
+          data_source = data[0] if data.kind_of?(Array)
+
+          if data_source[:type].present? && relationship.present?
+            related_attribute = data_source[:type].singularize
           end
           related_model = related_attribute.classify.constantize
         rescue => ex
           next
         end
 
+        created_records = []
         if data.kind_of?(Array)
           ids = data.map { |item| item[:id] }
           records = related_model.where(id: [ids])
-          value = records + create_related_models(key, related_model, ids - records.map{|r| r.id})
+          created_records = records + create_related_models(key, related_model, ids - records.map{|r| r.id})
+          value = created_records
         else
           id = data[:id]
 
           value = related_model.find_by(id: id)
           if value.nil?
-            value = create_related_models(key, related_model, [id]).first
+            created_records = create_related_models(key, related_model, [id]).first
+            value  = created_records.first
           end
         end
         obj.send("#{attribute}=", value) unless value.nil?
+
+        created_records.each do |m|
+          if m.save
+            puts  "it saved"
+          else
+            m.errors.each do |attribute, error|
+              Rails.logger.info " -- #{attribute} #{error}"
+            end
+          end
+        end
+
       end
     end
 
     def index
       if params.has_key?(model_ids)
-        objs = model.where(id: params[model_ids])
-        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: objs, include: p_include)
+        items = model.where(id: params[model_ids])
+      elsif !index_filter.nil?
+        items = model.where(**index_filter)
       else
-        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: model.all, include: p_include)
+        items = model.all
       end
+      @response_obj = ::JsonapiCrud::ResponseObject.new(obj: items, include: p_include, _meta: p_resource_meta)
+      render_response
+    end
 
+    def index_filter
+      nil
+    end
+
+    def mine
+      items = model.where(**mine_filter)
+      @response_obj = ::JsonapiCrud::ResponseObject.new(obj: items, include: p_include)
       render_response
     end
 
