@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jsonapi_crud (0.1.01)
+    jsonapi_crud (0.1.02)
       activesupport
       colorize
       paranoia (~> 2.2)
