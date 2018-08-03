@@ -20,6 +20,10 @@ module JsonapiCrud
       before_action :set_current_obj, :only => [*REQUIRE_CURRENT_OBJ]
     end
 
+    def method_missing(m)
+      puts m
+    end
+
     def dynamic_model?
       false
     end
@@ -66,6 +70,7 @@ module JsonapiCrud
       else
         @current_obj = source.find params[:id]
       end
+      puts "@current_obj: #{@current_obj}"
     rescue ActiveRecord::RecordNotFound
       render_error Error.not_found({:id => params[:id]} )
     end
@@ -122,17 +127,23 @@ module JsonapiCrud
           value = related_model.find_by(id: id)
           if value.nil?
             created_records = create_related_models(key, related_model, [id]).first
-            value  = created_records.first
+            if created_records.present?
+              value  = created_records.first
+            else
+              value = nil
+            end
           end
         end
         obj.send("#{attribute}=", value) unless value.nil?
 
-        created_records.each do |m|
-          if m.save
-            puts  "it saved"
-          else
-            m.errors.each do |attribute, error|
-              Rails.logger.info " -- #{attribute} #{error}"
+        if created_records.present?
+          created_records.each do |m|
+            if m.save
+              puts  "it saved"
+            else
+              m.errors.each do |attribute, error|
+                Rails.logger.info " -- #{attribute} #{error}"
+              end
             end
           end
         end
@@ -140,19 +151,15 @@ module JsonapiCrud
       end
     end
 
-    def index
-      if params.has_key?(model_ids)
-        items = model.where(id: params[model_ids])
-      elsif !index_filter.nil?
-        items = model.where(**index_filter)
-      else
-        items = model.all
-      end
-      @response_obj = ::JsonapiCrud::ResponseObject.new(obj: items, include: p_include, _meta: p_resource_meta)
-      render_response
+    def index_filter
+      authorized_filter
     end
 
-    def index_filter
+    def authorized_filter
+      nil
+    end
+
+    def mine_filter
       nil
     end
 
@@ -162,12 +169,27 @@ module JsonapiCrud
       render_response
     end
 
+  def index
+      authorize
+      if params.has_key?(model_ids)
+        items = model.where(id: params[model_ids])
+      elsif index_filter.present?
+        items = model.where(**index_filter)
+      else
+        items = model.all
+      end
+      @response_obj = ::JsonapiCrud::ResponseObject.new(obj: items, include: p_include, _meta: p_resource_meta)
+      render_response
+    end
+
     def show
+      authorize
       @response_obj = ::JsonapiCrud::ResponseObject.new(obj: @current_obj, include: p_include) #, meta: "roles"
       render_response
     end
 
     def create
+      authorize
       @current_obj = model.new(valid_params)
       build_relationships(@current_obj, p_relationships)
       _create(@current_obj) do
@@ -178,7 +200,7 @@ module JsonapiCrud
     def _create(obj, &on_success)
       if obj.save
         # Rails.logger.info "include: #{@include} #{self.include}"
-        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :created, include: @include) #
+        @response_obj = ::JsonapiCrud::ResponseObject.new(obj: obj, status: :created, include: p_include) #
         on_success.call if on_success.present?
         render_response
       else
@@ -187,6 +209,7 @@ module JsonapiCrud
     end
 
     def update
+      authorize
       build_relationships(@current_obj, p_relationships)
       _update(@current_obj) do
         update_success
@@ -205,6 +228,7 @@ module JsonapiCrud
     end
 
     def destroy
+      authorize
       if !paranoid? || (params[:hard_delete].present? && params[:hard_delete].to_bool)
         hard_destroy(@current_obj) do
           hard_destroy_success
@@ -238,6 +262,7 @@ module JsonapiCrud
     end
 
     def restore
+      authorize
       _restore(@current_obj) do
         restore_success
       end
