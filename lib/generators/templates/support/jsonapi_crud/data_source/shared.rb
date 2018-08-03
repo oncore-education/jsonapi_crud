@@ -73,7 +73,7 @@ module JsonapiCrud
     end
 
     def delete_params(id, hard = false)
-      formatted_params(:id => id, :meta => {:hard_delete => hard} )
+      formatted_params(:id => id).merge( {:hard_delete => hard} )
     end
 
     # this is an empty object that will be used to
