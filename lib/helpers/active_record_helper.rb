@@ -7,11 +7,11 @@ module JsonapiCrud
     end
 
     def can_update_relationship?(key)
-      puts "can_update_relationship?"
-      puts key
-      puts ""
-      puts editable_relationships.include?(key)
-      puts ""
+      # puts "can_update_relationship?"
+      # puts key
+      # puts ""
+      # puts editable_relationships.include?(key)
+      # puts ""
       self.send(key).nil? || editable_relationships.include?(key) # .to_sym
     end
 
