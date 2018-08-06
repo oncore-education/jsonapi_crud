@@ -1,6 +1,8 @@
 require 'jsonapi_crud/version'
 require 'mixins/actions'
 require 'util/errors'
+require 'models/policy'
+require 'models/default_policy'
 require 'models/error'
 require 'models/response_object'
 

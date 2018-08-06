@@ -12,16 +12,19 @@ module JsonapiCrud
 
     attr_reader :response_obj,
                 :current_obj,
+                :policy,
                 :include
 
 
     REQUIRE_CURRENT_OBJ = [:show, :update, :destroy, :restore]
     included do
       before_action :set_current_obj, :only => [*REQUIRE_CURRENT_OBJ]
+      before_action :set_policy
     end
 
-    def method_missing(m)
+    def method_missing(m, *args)
       puts m
+      puts args
     end
 
     def dynamic_model?
@@ -50,6 +53,18 @@ module JsonapiCrud
     def model
       model_class.constantize
     end
+
+    def set_policy
+      @policy = model.policy
+      @policy.user = @current_user
+    end
+
+    # def policy
+    #   return @policy if @policy.present?
+    #   p = model.policy
+    #   return p if p.present?
+    #   Policy.new(model)
+    # end
 
     def model_id
       model_class.underscore.downcase + "_id"
@@ -151,13 +166,15 @@ module JsonapiCrud
       end
     end
 
-    def index_filter
-      authorized_filter
-    end
-
-    def authorized_filter
-      nil
-    end
+    # def index_filter
+    #   authorized_filter
+    # end
+    #
+    # def authorized_filter
+    #   nil
+    # end
+    #       # elsif index_filter.present?
+    #   items = model.where(**index_filter)
 
     def mine_filter
       nil
@@ -169,27 +186,29 @@ module JsonapiCrud
       render_response
     end
 
-  def index
-      authorize
+    def authorized?
+      auth = @policy.authorized?(params, @current_obj)
+      render_error ::JsonapiCrud::Error.not_authorized unless auth
+      auth
+    end
+
+    def index
+      items = @policy.index
       if params.has_key?(model_ids)
-        items = model.where(id: params[model_ids])
-      elsif index_filter.present?
-        items = model.where(**index_filter)
-      else
-        items = model.all
+        items = items.where(id: params[model_ids])
       end
       @response_obj = ::JsonapiCrud::ResponseObject.new(obj: items, include: p_include, _meta: p_resource_meta)
       render_response
     end
 
     def show
-      authorize
+      return unless authorized?
       @response_obj = ::JsonapiCrud::ResponseObject.new(obj: @current_obj, include: p_include) #, meta: "roles"
       render_response
     end
 
     def create
-      authorize
+      return unless authorized?
       @current_obj = model.new(valid_params)
       build_relationships(@current_obj, p_relationships)
       _create(@current_obj) do
@@ -209,7 +228,7 @@ module JsonapiCrud
     end
 
     def update
-      authorize
+      return unless authorized?
       build_relationships(@current_obj, p_relationships)
       _update(@current_obj) do
         update_success
@@ -228,7 +247,7 @@ module JsonapiCrud
     end
 
     def destroy
-      authorize
+      return unless authorized?
       if !paranoid? || (params[:hard_delete].present? && params[:hard_delete].to_bool)
         hard_destroy(@current_obj) do
           hard_destroy_success
@@ -262,7 +281,7 @@ module JsonapiCrud
     end
 
     def restore
-      authorize
+      return unless authorized?
       _restore(@current_obj) do
         restore_success
       end
