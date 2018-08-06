@@ -28,5 +28,3 @@ module JsonapiCrud
 
   end
 end
-
-
