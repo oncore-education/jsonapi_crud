@@ -315,6 +315,7 @@ module JsonapiCrud
     #abstract
 
     def before_render
+      super
     end
 
     def create_success
